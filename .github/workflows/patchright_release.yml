@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/patchright
+      url: https://pypi.org/p/phantomwright-driver
     permissions:
       contents: write
       id-token: write # For trusted Publishing
