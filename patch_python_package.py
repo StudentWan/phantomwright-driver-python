@@ -41,6 +41,9 @@ with open("playwright-python/setup.py") as f:
     setup_source = f.read()
     setup_tree = ast.parse(setup_source)
 
+    # Check if driver URL is found in upstream Playwright
+    upstream_driver_url_found = False
+
     for node in ast.walk(setup_tree):
         # Modify driver_version
         if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant) and isinstance(node.targets[0], ast.Name):
@@ -49,7 +52,8 @@ with open("playwright-python/setup.py") as f:
 
         # Modify url
         if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant) and isinstance(node.targets[0], ast.Name):
-            if node.targets[0].id == "url" and node.value.value == "https://playwright.azureedge.net/builds/driver/":
+            if node.targets[0].id == "url" and node.value.value == "https://cdn.playwright.dev/builds/driver/":
+                upstream_driver_url_found = True
                 node.value = ast.JoinedStr(
                     values=[
                         ast.Constant(value='https://github.com/StudentWan/phantomwright-driver/releases/download/v'),
@@ -95,6 +99,9 @@ with open("playwright-python/setup.py") as f:
                     arg="version",
                     value=ast.Constant(value=phantomwright_driver_version)
                 ))
+        
+    if not upstream_driver_url_found:
+        raise RuntimeError("Upstream Playwright CDN URL is not found in playwright-python/setup.py")
 
     patch_file("playwright-python/setup.py", setup_tree)
 
