@@ -64,7 +64,7 @@ jobs:
           else
             PLAYWRIGHT_MINOR=${playwright_version#v}
             PLAYWRIGHT_MINOR=${PLAYWRIGHT_MINOR%.*}
-            PATCHRIGHT_RELEASE=$(curl -fsSL "https://api.github.com/repos/Kaliiiiiiiiii-Vinyzu/patchright/releases?per_page=100" | jq -r --arg minor "$PLAYWRIGHT_MINOR" '[.[].tag_name | ltrimstr("v") | select(startswith($minor + ".")) | select((try (split(".") | map(tonumber) | length) catch 0) == 3)] | sort_by(split(".") | map(tonumber)) | last')
+            PATCHRIGHT_RELEASE=$(curl -fsSL "https://api.github.com/repos/StudentWan/phantomwright-driver/releases?per_page=100" | jq -r --arg minor "$PLAYWRIGHT_MINOR" '[.[].tag_name | ltrimstr("v") | select(startswith($minor + ".")) | select((try (split(".") | map(tonumber) | length) catch 0) == 3)] | sort_by(split(".") | map(tonumber)) | last')
             test -n "$PATCHRIGHT_RELEASE" -a "$PATCHRIGHT_RELEASE" != "null"
           fi
           echo "patchright_release=$PATCHRIGHT_RELEASE" >> $GITHUB_ENV
