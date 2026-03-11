@@ -5,6 +5,7 @@ import os
 import toml
 
 phantomwright_driver_version = os.environ.get('patchright_release') or os.environ.get('playwright_version')
+pypi_version = os.environ.get('pypi_version') or phantomwright_driver_version
 
 def patch_file(file_path: str, patched_tree: ast.AST) -> None:
     with open(file_path, "w") as f:
@@ -12,7 +13,7 @@ def patch_file(file_path: str, patched_tree: ast.AST) -> None:
 
 # Adding _repo_version.py (Might not be intended but fixes the build)
 with open("playwright-python/playwright/_repo_version.py", "w") as f:
-    f.write(f"version = '{phantomwright_driver_version}'")
+    f.write(f"version = '{pypi_version}'")
 
 # Patching pyproject.toml
 with open("playwright-python/pyproject.toml", "r") as f:
@@ -94,7 +95,7 @@ with open("playwright-python/setup.py") as f:
             if node.func.id == "setup":
                 node.keywords.append(ast.keyword(
                     arg="version",
-                    value=ast.Constant(value=phantomwright_driver_version)
+                    value=ast.Constant(value=pypi_version)
                 ))
         
     patch_file("playwright-python/setup.py", setup_tree)
