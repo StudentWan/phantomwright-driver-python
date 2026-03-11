@@ -25,7 +25,13 @@ jobs:
       - name: Install Playwright-Python Package
         run: |
           uv sync --all-groups
-          git clone https://github.com/microsoft/playwright-python --branch $(curl --silent "https://api.github.com/repos/StudentWan/phantomwright-driver-python/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+          PLAYWRIGHT_TAG=$(curl -fsSL "https://api.github.com/repos/microsoft/playwright-python/releases/latest" | jq -r '.tag_name')
+          PLAYWRIGHT_MINOR=${PLAYWRIGHT_TAG#v}
+          PLAYWRIGHT_MINOR=${PLAYWRIGHT_MINOR%.*}
+          PATCHRIGHT_RELEASE=$(curl -fsSL "https://api.github.com/repos/StudentWan/phantomwright-driver/releases?per_page=100" | jq -r --arg minor "$PLAYWRIGHT_MINOR" '[.[].tag_name | ltrimstr("v") | select(startswith($minor + ".")) | select((try (split(".") | map(tonumber) | length) catch 0) == 3)] | sort_by(split(".") | map(tonumber)) | last')
+          test -n "$PATCHRIGHT_RELEASE" -a "$PATCHRIGHT_RELEASE" != "null"
+          echo "patchright_release=$PATCHRIGHT_RELEASE" >> $GITHUB_ENV
+          git clone https://github.com/microsoft/playwright-python --branch "$PLAYWRIGHT_TAG"
           cd playwright-python
           uv add -r local-requirements.txt
 
@@ -38,18 +44,17 @@ jobs:
         run: |
           cd playwright-python
           uv pip install -e .
-          for wheel in $(python setup.py --list-wheels); do
+          for wheel in $(uv run setup.py --list-wheels); do
             PLAYWRIGHT_TARGET_WHEEL=$wheel uv build --wheel
           done
 
       - name: Install Local Patchright Package
         run: |
-          cd playwright-python
-          uv pip install dist/phantomwright_driver-*-manylinux1_x86_64.whl
+          uv pip install --python .venv/bin/python playwright-python/dist/phantomwright_driver-*-manylinux1_x86_64.whl
 
       - name: Install Chromium with Patchright
         run: |
-          uv run phantomwright_driver install --with-deps chromium
+          uv run --no-sync phantomwright_driver install --with-deps chromium
 
       - name: Clone Playwright-Python Tests
         run: |
@@ -57,9 +62,9 @@ jobs:
 
       - name: Modify Tests
         run: |
-          uv run utils/modify_tests.py
+          uv run --no-sync utils/modify_tests.py
 
       - name: Run Chromium Tests
         run: |
-          xvfb-run -a uv run pytest --browser=chromium --disable-warnings --timeout 90 tests/sync/
-          xvfb-run -a uv run pytest --browser=chromium --disable-warnings --timeout 90 tests/async/
+          xvfb-run -a uv run --no-sync pytest --browser=chromium --disable-warnings --timeout 90 tests/sync/
+          xvfb-run -a uv run --no-sync pytest --browser=chromium --disable-warnings --timeout 90 tests/async/
